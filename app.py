@@ -1,5 +1,4 @@
 from flask import Flask, abort, request, jsonify
-
 from pymongo import MongoClient
 import datetime
 client = MongoClient('localhost', 27017)
@@ -8,9 +7,8 @@ app = Flask(__name__)
 
 @app.route('/api/get_posts/', methods=['GET'])
 def check_posts():
-    a = db.posts.find()
-    for post in a:
-        return jsonify(post)
+    a = list(db.posts.find())
+    return jsonify(a)
 
 
 @app.route('/api/check_in/', methods=['POST'])
@@ -19,21 +17,21 @@ def create_user():
     if len(content["email"]) <= 0 or len(content["username"]) <= 0 or len(content["password"]) <= 0:
         abort(400)
     else:
-        try:
-            print(db.users.find_one({'email': content['email']})['email'])
-            return 'Пользователь с таким Email уже существует'
-        except TypeError:
-            try:
-                print(db.users.find_one({'username': content['username']})['username'])
-                return 'Пользователь с таким Username уже существует'
-            except TypeError:
+        result_email = db.users.find_one({'email': content['email']})
+        print(result_email)
+        if content['email'] not in result_email:
+            result_username = db.users.find_one({'username': content['username']})['username']
+            if not result_username:
                 user = {'email': content['email'],
                         'username': content['username'],
                         'password': content['password']
                         }
                 db.users.insert_one(user)
                 return 'Пользователь создан'
-
+            else:
+                return 'Такой username уже существует'
+        else:
+            return 'Такой Email уже существует'
 
 @app.route('/api/new_post', methods=['POST'])
 def create_article():
