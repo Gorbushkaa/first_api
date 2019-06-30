@@ -1,8 +1,8 @@
 import requests
 #ПРОСМОТР ВСЕХ СТАТЕЙ
-'''url = 'http://127.0.0.1:5000/api/get_posts/'
+"""url = 'http://127.0.0.1:5000/api/get_posts/'
 res = requests.get(url)
-print(res.text)'''
+print(res.text)"""
 
 #НОВЫЙ ПОСТ
 '''url = 'http://127.0.0.1:5000/api/new_post'
@@ -10,6 +10,7 @@ send = {"title": "ОПИСАНИЕ333",
         "content": "ПОСТ22"}
 res = requests.post(url, json=send, auth=('Sema', 'password1'))
 print(res.text)'''
+
 #НОВЫЙ КОМЕНТАРИЙ
 '''url = 'http://127.0.0.1:5000/api/new_comment'
 send = {'post_id': '5d1727bf1bc709519742b68c',

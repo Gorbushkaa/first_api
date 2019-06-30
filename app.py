@@ -8,7 +8,8 @@ client = MongoClient('localhost', 27017)
 db = client.restapi
 app = Flask(__name__)
 
-def check_auth(username, password):
+
+def check_auth(username, password): #ПРОВЕРКА БД НА НАЛИЧИЕ ПАРЫ LOGIN:PASSWORD
     a = db.users.find_one({'username': username,
                            'password': password})
     ID = str(a['_id'])
@@ -25,7 +26,7 @@ def authenticate():
     {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
 
-def requires_auth(f):
+def requires_auth(f):#Создание декоратора basicauth
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
@@ -37,13 +38,13 @@ def requires_auth(f):
 
 
 @app.route('/api/get_posts/', methods=['GET'])
-def check_posts():
+def check_posts():#Выводит все посты
     posts = db.posts.find()
     return jsonify(encode(posts))
 
 
 @app.route('/api/check_in/', methods=['POST'])
-def create_user():
+def create_user():#Cоздание нового пользователя
     content = request.json
     if len(content["email"]) <= 0 or len(content["username"]) <= 0 or len(content["password"]) <= 0:
         abort(400)
@@ -66,7 +67,7 @@ def create_user():
 
 @app.route('/api/new_post', methods=['POST'])
 @requires_auth
-def create_article(ID):
+def create_article(ID):#Создание новой статьи
     content = request.json
     if len(content["title"]) <= 0 or len(content["content"]) <= 0:
         abort(400)
@@ -81,7 +82,7 @@ def create_article(ID):
 
 
 @app.route('/api/new_comment', methods=['POST'])
-@requires_auth
+@requires_auth#Новый коментарий
 def new_comment(ID):
     content = request.json
     if len(content["post_id"]) <= 0 or len(content["title"]) <= 0 or len(content["content"]) <= 0:
@@ -101,7 +102,7 @@ def new_comment(ID):
 
 
 @app.route('/api/change/', methods=['PUT'])
-@requires_auth
+@requires_auth#Изменение статьи
 def update_post(ID):
     content = request.json
     a = db.posts.find_one({'_id': ObjectId(content['post_id'])})
@@ -122,7 +123,7 @@ def update_post(ID):
 
 
 @app.route('/api/delete/', methods=['DELETE'])
-@requires_auth
+@requires_auth#Удаление статьи или коментария
 def delete(ID):
     content = request.json
     if content['choose'] == 'post':
