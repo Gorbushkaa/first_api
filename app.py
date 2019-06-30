@@ -10,12 +10,12 @@ app = Flask(__name__)
 
 def check_auth(username, password):
     a = db.users.find_one({'username': username,
-                      'password': password})
+                           'password': password})
     ID = str(a['_id'])
     if a is not None:
-        return True and ID
-    if a is None:
-        return False
+        return ID
+    elif a is None:
+        return None
 
 
 def authenticate():
@@ -29,9 +29,10 @@ def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
+        ID = check_auth(auth.username, auth.password)
+        if not auth or ID is None:
             return authenticate()
-        return f(*args, **kwargs)
+        return f(ID, *args, **kwargs)
     return decorated
 
 
@@ -42,7 +43,6 @@ def check_posts():
 
 
 @app.route('/api/check_in/', methods=['POST'])
-
 def create_user():
     content = request.json
     if len(content["email"]) <= 0 or len(content["username"]) <= 0 or len(content["password"]) <= 0:
@@ -63,59 +63,49 @@ def create_user():
         else:
             return 'Такой Email уже существует'
 
+
 @app.route('/api/new_post', methods=['POST'])
 @requires_auth
-def create_article():
+def create_article(ID):
     content = request.json
-    if len(content["author_id"]) <= 0 or len(content["title"]) <= 0 or len(content["content"]) <= 0:
+    if len(content["title"]) <= 0 or len(content["content"]) <= 0:
         abort(400)
     else:
-        result = db.users.find_one({'_id': ObjectId(content['author_id'])})
-        print(result)
-        if result is None:
-            return 'Зарегестрируйтесь'
-        else:
-            article = {'author_id': content["author_id"],
-                       'title': content["title"],
-                       'content': content["content"],
-                       'publication_datetime': datetime.datetime.utcnow()
-                       }
-            db.posts.insert_one(article)
-            return str("Пост добавлен")
+        article = {'author_id': ID,
+                   'title': content["title"],
+                   'content': content["content"],
+                   'publication_datetime': datetime.datetime.utcnow()
+                   }
+        db.posts.insert_one(article)
+        return "Пост добавлен"
 
 
 @app.route('/api/new_comment', methods=['POST'])
 @requires_auth
-def new_comment():
+def new_comment(ID):
     content = request.json
-    if len(content["author_id"]) <= 0 or len(content["post_id"]) <= 0 or len(content["title"]) <= 0 or len(content["content"]) <= 0:
+    if len(content["post_id"]) <= 0 or len(content["title"]) <= 0 or len(content["content"]) <= 0:
         abort(400)
     else:
         result = db.posts.find_one({'_id': ObjectId(content['post_id'])})
         if result is not None:
-            result2 = db.users.find_one({'_id': ObjectId(content['author_id'])})
-            if result2 is not None:
-                comment = {'post_id': content["post_id"],
-                           'author_id': content["author_id"],
-                           'title': content["title"],
-                           'content': content["content"],
-                           'publication_datetime': datetime.datetime.utcnow()}
-                db.comments.insert_one(comment)
-                return "Коментарий добавлен"
-            else:
-                return 'Зарегистрируйтесь, чтобы оставить коментарий'
-
+            comment = {'post_id': content["post_id"],
+                       'author_id': ID,
+                       'title': content["title"],
+                       'content': content["content"],
+                       'publication_datetime': datetime.datetime.utcnow()}
+            db.comments.insert_one(comment)
+            return "Коментарий добавлен"
         else:
             return 'Такого поста не существует'
 
 
 @app.route('/api/change/', methods=['PUT'])
 @requires_auth
-def update_post():
-
+def update_post(ID):
     content = request.json
     a = db.posts.find_one({'_id': ObjectId(content['post_id'])})
-    if a is not None and content['author_id'] == a['author_id']:
+    if a is not None and ID == a['author_id']:
         if len(content['title']) <= 0:
             content['title'] = a['title']
         elif len(content['content']) <= 0:
@@ -128,27 +118,27 @@ def update_post():
         db.posts.update_one(old, new)
         return "Статья изменена"
     else:
-        return 'Это не ваша статья'
+        return 'Это не ваша статья или статья не найдена'
 
 
 @app.route('/api/delete/', methods=['DELETE'])
 @requires_auth
-def delete():
+def delete(ID):
     content = request.json
     if content['choose'] == 'post':
         a = db.posts.find_one({'_id': ObjectId(content['post_id'])})
-        if a is not None:
+        if a is not None and a['author_id'] == ID:
             db.posts.remove({'_id': ObjectId(content['post_id'])})
             return 'Пост удален'
         else:
-            return 'Пост не найден'
+            return 'Пост не найден или он не Ваш'
     elif content['choose'] == 'comment':
         a = db.comments.find_one({'_id': ObjectId(content['post_id'])})
-        if a is not None:
+        if a is not None and a['author_id'] == ID:
             db.comments.remove({'_id': ObjectId(content['post_id'])})
             return 'Коммент удален'
         else:
-            return 'Коммент не найден'
+            return 'Коммент не найден или он не Ваш'
 
 
 def encode(all):
