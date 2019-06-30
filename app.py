@@ -1,14 +1,17 @@
 from flask import Flask, abort, request, jsonify
 from pymongo import MongoClient
 import datetime
+from bson.objectid import ObjectId
+
+
 client = MongoClient('localhost', 27017)
 db = client.restapi
 app = Flask(__name__)
 
 @app.route('/api/get_posts/', methods=['GET'])
 def check_posts():
-    a = list(db.posts.find())
-    return jsonify(a)
+    posts = db.posts.find()
+    return jsonify(encode(posts))
 
 
 @app.route('/api/check_in/', methods=['POST'])
@@ -18,10 +21,9 @@ def create_user():
         abort(400)
     else:
         result_email = db.users.find_one({'email': content['email']})
-        print(result_email)
-        if content['email'] not in result_email:
-            result_username = db.users.find_one({'username': content['username']})['username']
-            if not result_username:
+        if result_email is None:
+            result_username = db.users.find_one({'username': content['username']})
+            if result_username is None:
                 user = {'email': content['email'],
                         'username': content['username'],
                         'password': content['password']
@@ -39,13 +41,18 @@ def create_article():
     if len(content["author_id"]) <= 0 or len(content["title"]) <= 0 or len(content["content"]) <= 0:
         abort(400)
     else:
-        article = {'author_id': content["author_id"],
-                   'title': content["title"],
-                   'content': content["content"],
-                   'publication_datetime': datetime.datetime.utcnow()
-                   }
-        db.posts.insert_one(article)
-        return str("Пост добавлен")
+        result = db.users.find_one({'_id': ObjectId(content['author_id'])})
+        print(result)
+        if result is None:
+            return 'Зарегестрируйтесь'
+        else:
+            article = {'author_id': content["author_id"],
+                       'title': content["title"],
+                       'content': content["content"],
+                       'publication_datetime': datetime.datetime.utcnow()
+                       }
+            db.posts.insert_one(article)
+            return str("Пост добавлен")
 
 
 @app.route('/api/new_comment', methods=['POST'])
@@ -54,23 +61,31 @@ def new_comment():
     if len(content["author_id"]) <= 0 or len(content["post_id"]) <= 0 or len(content["title"]) <= 0 or len(content["content"]) <= 0:
         abort(400)
     else:
-        print(db.posts.find_one({'_id': content['post_id']})['email'])
-        try:
-            print(db.posts.find_one({'_id': content['post_id']})['_id'])
-            try:
-                print(db.users.find_one({'_id': content['author_id']})['_id'])
+        result = db.posts.find_one({'_id': ObjectId(content['post_id'])})
+        if result is not None:
+            result2 = db.users.find_one({'_id': ObjectId(content['author_id'])})
+            if result2 is not None:
                 comment = {'post_id': content["post_id"],
                            'author_id': content["author_id"],
                            'title': content["title"],
                            'content': content["content"],
                            'publication_datetime': datetime.datetime.utcnow()}
                 db.comments.insert_one(comment)
-            except TypeError:
+                return "Коментарий добавлен"
+            else:
                 return 'Зарегистрируйтесь, чтобы оставить коментарий'
 
-        except TypeError:
+        else:
             return 'Такого поста не существует'
 
+
+def encode(all):
+    all_posts = []
+    for i in all:
+        ID = str(i['_id'])
+        i['_id'] = ID
+        all_posts.append(i)
+    return all_posts
 
 
 if __name__ == '__main__':
