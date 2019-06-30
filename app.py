@@ -4,7 +4,7 @@ import datetime
 from bson.objectid import ObjectId
 from functools import wraps
 
-client = MongoClient('https://first1131.herokuapp.com/', 27017)
+client = MongoClient('localhost', 27017)
 db = client.restapi
 app = Flask(__name__)
 
