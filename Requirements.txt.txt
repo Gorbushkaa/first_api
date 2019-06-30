@@ -1,3 +1,0 @@
-Flask==1.0.3
-pymongo==3.8.0
-virtualenv==16.5.0
