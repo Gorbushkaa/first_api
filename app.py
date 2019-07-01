@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 
 def check_auth(username, password):
-    hashedPassword = hashlib.md5(password.encode()).hexdigest()
+    hashedPassword = hashlib.sha256(password.encode()).hexdigest()
     result = db.users.find_one({'username': username,
                                 'password': hashedPassword})
     if result is not None:
@@ -52,7 +52,7 @@ def create_user():#Cоздание нового пользователя
         if result_email is None:
             result_username = db.users.find_one({'username': content['username']})
             if result_username is None:
-                h = hashlib.md5(str.encode(content['password']))
+                h = hashlib.sha256(str.encode(content['password']))
                 password = h.hexdigest()
                 user = {'email': content['email'],
                         'username': content['username'],
@@ -63,7 +63,7 @@ def create_user():#Cоздание нового пользователя
             else:
                 return 'Такой username уже существует'
         else:
-            return 400, 'Такой Email уже существует'
+            return abort(400, 'Такой Email уже существует')
 
 
 @app.route('/api/new_post', methods=['POST'])
@@ -84,7 +84,7 @@ def create_article(ID):#Создание новой статьи
                                    'content': content["content"]})
 
         if check is not None:
-            return "Пост добавлен", 'ID поста :'
+            return "Пост добавлен"
         elif check is None:
             return "Ошибка добавления"
 
@@ -174,4 +174,4 @@ def lst(all):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port='80', debug=True)

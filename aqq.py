@@ -5,11 +5,11 @@ res = requests.get(url)
 print(res.text)'''
 
 #НОВЫЙ ПОСТ
-url = 'http://127.0.0.1:5000/api/new_post'
-send = {"title": "sdf333333333333d",
-        "content": "w12313131!"}
-res = requests.post(url, json=send, auth=('Coder2', 'SuperCoder2'))
-print(res.text)
+'''url = 'http://127.0.0.1:5000/api/new_post'
+send = {"title": "sdf33333333234234222222222222222411113333d",
+        "content": "w33324!"}
+res = requests.post(url, json=send, auth=('Coder22', 'SuperCoder22'))
+print(res.text)'''
 
 #НОВЫЙ КОМЕНТАРИЙ
 '''url = 'http://84.201.132.180/api/new_comment'
@@ -36,10 +36,10 @@ print(res.text)'''
 
 #НОВЫЙ ПОЛЬЗОВАТЕЛЬ
 '''url = 'http://127.0.0.1:5000/api/check_in/'
-send = {"email": "asdadd.com",
-        "username": "Coder2",
-        "password": "SuperCoder2"}'''
+send = {"email": "as33dadd.com",
+        "username": "Coder22",
+        "password": "SuperCoder22"}
 
 res = requests.post(url, json=send)
 
-print(res.text)
+print(res.text)'''
