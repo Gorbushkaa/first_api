@@ -1,18 +1,18 @@
 import requests
 #ПРОСМОТР ВСЕХ СТАТЕЙ
-"""url = 'http://127.0.0.1:5000/api/get_posts/'
+'''url = 'http://84.201.132.180/api/get_posts/'
 res = requests.get(url)
-print(res.text)"""
-
-#НОВЫЙ ПОСТ
-'''url = 'http://127.0.0.1:5000/api/new_post'
-send = {"title": "ОПИСАНИЕ333",
-        "content": "ПОСТ22"}
-res = requests.post(url, json=send, auth=('Sema', 'password1'))
 print(res.text)'''
 
+#НОВЫЙ ПОСТ
+url = 'http://127.0.0.1:5000/api/new_post'
+send = {"title": "sdf333333333333d",
+        "content": "w12313131!"}
+res = requests.post(url, json=send, auth=('Coder2', 'SuperCoder2'))
+print(res.text)
+
 #НОВЫЙ КОМЕНТАРИЙ
-'''url = 'http://127.0.0.1:5000/api/new_comment'
+'''url = 'http://84.201.132.180/api/new_comment'
 send = {'post_id': '5d1727bf1bc709519742b68c',
         'title': 'TIT3122353245235324',
         'content': 'COMMEasdfasdfasNT',}
@@ -36,10 +36,10 @@ print(res.text)'''
 
 #НОВЫЙ ПОЛЬЗОВАТЕЛЬ
 '''url = 'http://127.0.0.1:5000/api/check_in/'
-send = {"email": "kvaksha@boloto.com",
-        "username": "Lyagushka",
-        "password": "KvaKva"}
+send = {"email": "asdadd.com",
+        "username": "Coder2",
+        "password": "SuperCoder2"}'''
 
 res = requests.post(url, json=send)
 
-print(res.text)'''
+print(res.text)

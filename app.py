@@ -3,20 +3,19 @@ from pymongo import MongoClient
 import datetime
 from bson.objectid import ObjectId
 from functools import wraps
+import hashlib
 
 client = MongoClient('localhost', 27017)
 db = client.restapi
 app = Flask(__name__)
 
 
-def check_auth(username, password): #ПРОВЕРКА БД НА НАЛИЧИЕ ПАРЫ LOGIN:PASSWORD
-    a = db.users.find_one({'username': username,
-                           'password': password})
-    ID = str(a['_id'])
-    if a is not None:
-        return ID
-    elif a is None:
-        return None
+def check_auth(username, password):
+    hashedPassword = hashlib.md5(password.encode()).hexdigest()
+    result = db.users.find_one({'username': username,
+                                'password': hashedPassword})
+    if result is not None:
+        return str(result['_id'])
 
 
 def authenticate():
@@ -40,7 +39,7 @@ def requires_auth(f):#Создание декоратора basicauth
 @app.route('/api/get_posts/', methods=['GET'])
 def check_posts():#Выводит все посты
     posts = db.posts.find()
-    return jsonify(encode(posts))
+    return jsonify(lst(posts))
 
 
 @app.route('/api/check_in/', methods=['POST'])
@@ -53,16 +52,18 @@ def create_user():#Cоздание нового пользователя
         if result_email is None:
             result_username = db.users.find_one({'username': content['username']})
             if result_username is None:
+                h = hashlib.md5(str.encode(content['password']))
+                password = h.hexdigest()
                 user = {'email': content['email'],
                         'username': content['username'],
-                        'password': content['password']
+                        'password': password
                         }
                 db.users.insert_one(user)
                 return 'Пользователь создан'
             else:
                 return 'Такой username уже существует'
         else:
-            return 'Такой Email уже существует'
+            return 400, 'Такой Email уже существует'
 
 
 @app.route('/api/new_post', methods=['POST'])
@@ -78,7 +79,15 @@ def create_article(ID):#Создание новой статьи
                    'publication_datetime': datetime.datetime.utcnow()
                    }
         db.posts.insert_one(article)
-        return "Пост добавлен"
+        check = db.posts.find_one({'author_id': ID,
+                                   'title': content["title"],
+                                   'content': content["content"]})
+
+        if check is not None:
+            return "Пост добавлен", 'ID поста :'
+        elif check is None:
+            return "Ошибка добавления"
+
 
 
 @app.route('/api/new_comment', methods=['POST'])
@@ -96,9 +105,16 @@ def new_comment(ID):
                        'content': content["content"],
                        'publication_datetime': datetime.datetime.utcnow()}
             db.comments.insert_one(comment)
-            return "Коментарий добавлен"
+            check = db.comments.find_one({'post_id': content["post_id"],
+                                          'author_id': ID,
+                                          'title': content["title"],
+                                          'content': content["content"]})
+            if check is not None:
+                return "Коментарий добавлен"
+            elif check is None:
+                return "Ошибка добавления"
         else:
-            return 'Такого поста не существует'
+            return 404, 'Такого поста не существует'
 
 
 @app.route('/api/change/', methods=['PUT'])
@@ -117,9 +133,15 @@ def update_post(ID):
         new = {"$set":{'content': content['content'],
                'title': content['title']}}
         db.posts.update_one(old, new)
-        return "Статья изменена"
+        check = db.posts.find_one({'content': content['content'],
+                                   'title': content['title']})
+        if check is not None:
+            return "Статья изменена"
+        elif check is None:
+            return "Ошибка изменения"
+
     else:
-        return 'Это не ваша статья или статья не найдена'
+        return 404, 'Это не ваша статья или статья не найдена'
 
 
 @app.route('/api/delete/', methods=['DELETE'])
@@ -132,17 +154,17 @@ def delete(ID):
             db.posts.remove({'_id': ObjectId(content['post_id'])})
             return 'Пост удален'
         else:
-            return 'Пост не найден или он не Ваш'
+            return 404, 'Пост не найден или он не Ваш'
     elif content['choose'] == 'comment':
         a = db.comments.find_one({'_id': ObjectId(content['post_id'])})
         if a is not None and a['author_id'] == ID:
             db.comments.remove({'_id': ObjectId(content['post_id'])})
             return 'Коммент удален'
         else:
-            return 'Коммент не найден или он не Ваш'
+            return 404, 'Коммент не найден или он не Ваш'
 
 
-def encode(all):
+def lst(all):
     all_posts = []
     for i in all:
         ID = str(i['_id'])
@@ -152,4 +174,4 @@ def encode(all):
 
 
 if __name__ == '__main__':
-    app.run(host= '0.0.0.0', port='80', debug=True)
+    app.run(debug=True)
